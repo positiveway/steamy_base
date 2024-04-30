@@ -1,0 +1,22 @@
+[package]
+name    = "steamy_base"
+version = "0.2.0"
+
+authors = ["meh. <meh@schizofreni.co>"]
+license = "WTFPL"
+exclude = ["support/*"]
+
+description = "Library to interact with the Steam controller."
+repository  = "https://github.com/meh/steamy"
+keywords    = ["steam", "input", "controller"]
+
+[dependencies]
+byteorder = "0.5"
+bitflags  = "0.3"
+
+[target.'cfg(target_os = "linux")'.dependencies.rusb]
+version = "0.9"
+
+[target.'cfg(not(target_os = "linux"))'.dependencies.hid]
+version  = "0.2"
+features = ["build"]
