@@ -2,7 +2,7 @@ use std::{u8, i16};
 use std::io::{Read, Seek, SeekFrom};
 use byteorder::{ReadBytesExt, BigEndian, LittleEndian};
 
-use {Result as Res, Error, Button};
+use crate::{Result as Res, Error, Button};
 
 /// The controller state.
 #[derive(Clone, Copy, PartialEq, Debug)]

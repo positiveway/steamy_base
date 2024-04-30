@@ -4,8 +4,8 @@ use usb;
 #[cfg(not(target_os = "linux"))]
 use hid;
 
-use {Result as Res, Controller};
-use {VENDOR_ID, PRODUCT_ID, ENDPOINT, INDEX};
+use crate::{Result as Res, Controller};
+use crate::{VENDOR_ID, PRODUCT_ID, ENDPOINT, INDEX};
 
 /// Controller manager.
 pub struct Manager {
@@ -28,7 +28,7 @@ impl Manager {
 	#[cfg(not(target_os = "linux"))]
 	pub fn new() -> Res<Manager> {
 		Ok(Manager {
-			hid: try!(hid::init()),
+			hid: hid::init()?,
 		})
 	}
 

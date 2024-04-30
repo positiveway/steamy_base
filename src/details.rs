@@ -1,7 +1,7 @@
 use std::io::{Read, Seek, SeekFrom};
 use std::time::{UNIX_EPOCH, Duration, SystemTime};
 use byteorder::{ReadBytesExt, LittleEndian, BigEndian};
-use {Result as Res};
+use crate::{Result as Res};
 
 #[derive(Clone, Copy, PartialEq, Debug)]
 pub struct Details {

@@ -1,4 +1,4 @@
-use {Result as Res, Controller};
+use crate::{Result as Res, Controller};
 
 /// Controller sensors management.
 pub struct Sensors<'a> {

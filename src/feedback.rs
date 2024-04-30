@@ -1,5 +1,5 @@
 use byteorder::{WriteBytesExt, LittleEndian};
-use {Result as Res, Controller};
+use crate::{Result as Res, Controller};
 
 /// Controller feedback builder.
 pub struct Feedback<'a> {

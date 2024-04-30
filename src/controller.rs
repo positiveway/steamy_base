@@ -12,8 +12,8 @@ use usb;
 #[cfg(not(target_os = "linux"))]
 use hid;
 
-use {Result as Res, Error, State, Details};
-use {Lizard, Feedback, Sensors, Led, Sound, Calibrate, details};
+use crate::{Result as Res, Error, State, Details};
+use crate::{Lizard, Feedback, Sensors, Led, Sound, Calibrate, details};
 
 const LIMIT:    u64 = 10;
 const INCREASE: u64 = 50;
@@ -27,7 +27,7 @@ macro_rules! request {
 
 			Err(e) => {
 				if $limit == 0 {
-					try!(Err(e));
+					Err(e)?;
 				}
 
 				thread::sleep(Duration::from_millis((LIMIT - $limit) * INCREASE));
@@ -140,7 +140,7 @@ impl<'a> Controller{
 			marker: PhantomData,
 		};
 
-		try!(controller.reset());
+		controller.reset()?;
 
 		Ok(controller)
 	}
@@ -236,8 +236,8 @@ impl<'a> Controller{
 		self.packet[1] = id;
 		self.packet[2] = size;
 
-		try!(func(Cursor::new(&mut self.packet[3..])));
-		try!(self.handle.feature().send(&self.packet[..]));
+		func(Cursor::new(&mut self.packet[3..]))?;
+		self.handle.feature().send(&self.packet[..])?;
 
 		Ok(())
 	}
@@ -285,7 +285,7 @@ impl<'a> Controller{
 		self.packet[1] = id;
 		self.packet[2] = size;
 
-		try!(func(Cursor::new(&mut self.packet[3..])));
+		func(Cursor::new(&mut self.packet[3..]))?;
 
 		let mut limit = LIMIT;
 		loop {
@@ -387,7 +387,7 @@ impl<'a> Controller{
 	#[doc(hidden)]
 	#[cfg(not(target_os = "linux"))]
 	pub fn receive(&mut self, timeout: Duration) -> Res<(u8, &[u8])> {
-		if try!(self.handle.data().read(&mut self.packet[1..], timeout)).unwrap_or(0) != 64 {
+		if self.handle.data().read(&mut self.packet[1..], timeout)?.unwrap_or(0) != 64 {
 			return Err(Error::InvalidParameter);
 		}
 
