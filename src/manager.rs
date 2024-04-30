@@ -21,7 +21,7 @@ impl Manager {
 	#[cfg(target_os = "linux")]
 	pub fn new() -> Res<Manager> {
 		Ok(Manager {
-			usb: try!(usb::Context::new()),
+			usb: usb::Context::new()?,
 		})
 	}
 

@@ -9,7 +9,7 @@ impl<'a, 'b> Calibrate<'a> {
 	#[doc(hidden)]
 	pub fn new(controller: &'a mut Controller<>) -> Calibrate<'a> {
 		Calibrate {
-			controller: controller,
+			controller,
 		}
 	}
 

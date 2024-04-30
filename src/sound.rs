@@ -50,8 +50,8 @@ impl<'a, 'b> Sound<'a> {
 	/// Change the notification sound when turning on and off the device.
 	pub fn notification(self, on: u8, off: u8) -> Res<()> {
 		self.controller.control_with(0xc1, 0x10, |mut buf| {
-			try!(buf.write_u8(on));
-			try!(buf.write_u8(off));
+			buf.write_u8(on)?;
+			buf.write_u8(off)?;
 
 			buf.write(&[
 				0xff, 0xff, 0x03, 0x09,
@@ -115,16 +115,16 @@ impl<'a, 'b> Sound<'a> {
 		let period   = 1.0 / FREQUENCIES[if index >= 128 { 127 } else { index }];
 
 		self.controller.control_with(0x8f, 0x07, |mut buf| {
-			try!(buf.write_u8(channel));
+			buf.write_u8(channel)?;
 
-			try!(buf.write_u16::<LittleEndian>((period * RATIO).round() as u16));
-			try!(buf.write_u16::<LittleEndian>((period * RATIO).round() as u16));
+			buf.write_u16::<LittleEndian>((period * RATIO).round() as u16)?;
+			buf.write_u16::<LittleEndian>((period * RATIO).round() as u16)?;
 
 			if duration >= 0.0 {
-				try!(buf.write_u16::<LittleEndian>((duration / period).round() as u16));
+				buf.write_u16::<LittleEndian>((duration / period).round() as u16)?;
 			}
 			else {
-				try!(buf.write_u16::<LittleEndian>(0x7fff));
+				buf.write_u16::<LittleEndian>(0x7fff)?;
 			}
 
 			Ok(())

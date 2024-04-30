@@ -28,23 +28,23 @@ impl Build {
 		while let Ok(key) = buffer.read_u8() {
 			match key {
 				0x09 => {
-					revision = try!(buffer.read_i32::<LittleEndian>());
+					revision = buffer.read_i32::<LittleEndian>()?;
 				}
 
 				0x0a => {
-					bootloader = try!(buffer.read_i32::<LittleEndian>());
+					bootloader = buffer.read_i32::<LittleEndian>()?;
 				}
 
 				0x04 => {
-					firmware = try!(buffer.read_i32::<LittleEndian>());
+					firmware = buffer.read_i32::<LittleEndian>()?;
 				}
 
 				0x05 => {
-					radio = try!(buffer.read_i32::<LittleEndian>());
+					radio = buffer.read_i32::<LittleEndian>()?;
 				}
 
 				_ => {
-					try!(buffer.seek(SeekFrom::Current(4)));
+					buffer.seek(SeekFrom::Current(4))?;
 				}
 			}
 		}
@@ -67,10 +67,10 @@ pub struct Serial {
 
 impl Serial {
 	pub fn parse<R: Read>(mut buffer: R) -> Res<[u8; 10]> {
-		try!(buffer.read_u8());
+		buffer.read_u8()?;
 
 		let mut serial = [0u8; 10];
-		try!(buffer.read(&mut serial[..]));
+		buffer.read(&mut serial[..])?;
 
 		Ok(serial)
 	}
@@ -84,15 +84,15 @@ pub struct Receiver {
 
 impl Receiver {
 	pub fn parse<R: Read + Seek>(mut buffer: R) -> Res<Receiver> {
-		let firmware = try!(buffer.read_i32::<BigEndian>());
-		try!(buffer.seek(SeekFrom::Current(10)));
+		let firmware = buffer.read_i32::<BigEndian>()?;
+		buffer.seek(SeekFrom::Current(10))?;
 
 		let mut serial = [0u8; 10];
-		try!(buffer.read(&mut serial[..]));
+		buffer.read(&mut serial[..])?;
 
 		Ok(Receiver {
 			firmware: UNIX_EPOCH + Duration::from_secs(firmware as u64),
-			serial:   serial,
+			serial,
 		})
 	}
 }

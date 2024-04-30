@@ -9,7 +9,7 @@ impl<'a, 'b> Sensors<'a> {
 	#[doc(hidden)]
 	pub fn new(controller: &'a mut Controller<>) -> Sensors<'a> {
 		Sensors {
-			controller: controller,
+			controller,
 		}
 	}
 

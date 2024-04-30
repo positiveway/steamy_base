@@ -9,7 +9,7 @@ impl<'a, 'b> Lizard<'a> {
 	#[doc(hidden)]
 	pub fn new(controller: &'a mut Controller<>) -> Lizard<'a> {
 		Lizard {
-			controller: controller,
+			controller,
 		}
 	}
 

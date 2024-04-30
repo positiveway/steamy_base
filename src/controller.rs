@@ -179,10 +179,10 @@ impl<'a> Controller{
 		let timeout = self.settings.timeout;
 
 		if self.settings.lizard {
-			try!(self.control(0x85));
+			self.control(0x85)?;
 		}
 		else {
-			try!(self.control(0x81));
+			self.control(0x81)?;
 		}
 
 		if self.settings.sensors {
@@ -348,32 +348,28 @@ impl<'a> Controller{
 	/// Fetch the controller details.
 	pub fn details(&mut self) -> Res<Details> {
 		if self.is_wired() {
-			try!(self.request(0x83));
+			self.request(0x83)?;
 		}
 
-		let build = try!(details::Build::parse(Cursor::new(try!(
-			self.request(0x83)))));
+		let build = details::Build::parse(Cursor::new(self.request(0x83)?))?;
 
-		let mainboard = try!(details::Serial::parse(Cursor::new(try!(
-			self.request_with(0xae, 0x15, |mut buf| buf.write_u8(0x00))))));
+		let mainboard = details::Serial::parse(Cursor::new(self.request_with(0xae, 0x15, |mut buf| buf.write_u8(0x00))?))?;
 
-		let controller = try!(details::Serial::parse(Cursor::new(try!(
-			self.request_with(0xae, 0x15, |mut buf| buf.write_u8(0x01))))));
+		let controller = details::Serial::parse(Cursor::new(self.request_with(0xae, 0x15, |mut buf| buf.write_u8(0x01))?))?;
 
 		let receiver = if self.is_remote() {
-			Some(try!(details::Receiver::parse(Cursor::new(try!(
-				self.request(0xa1))))))
+			Some(details::Receiver::parse(Cursor::new(self.request(0xa1)?))?)
 		}
 		else {
 			None
 		};
 
 		Ok(Details {
-			build:    build,
-			receiver: receiver,
+			build,
+			receiver,
 			serial:   details::Serial {
-				mainboard:  mainboard,
-				controller: controller,
+				mainboard,
+				controller,
 			},
 		})
 	}
@@ -381,7 +377,7 @@ impl<'a> Controller{
 	#[doc(hidden)]
 	#[cfg(target_os = "linux")]
 	pub fn receive(&mut self, timeout: Duration) -> Res<(u8, &[u8])> {
-		if try!(self.handle.read_interrupt(self.address, &mut self.packet, timeout)) != 64 {
+		if self.handle.read_interrupt(self.address, &mut self.packet, timeout)? != 64 {
 			return Err(Error::InvalidParameter);
 		}
 
@@ -400,13 +396,13 @@ impl<'a> Controller{
 
 	/// Get the current state of the controller.
 	pub fn state(&mut self, timeout: Duration) -> Res<(State, Vec<u8>)> {
-		let (id, buffer) = try!(self.receive(timeout));
+		let (id, buffer) = self.receive(timeout)?;
 		let buf_export = buffer.to_vec();
 
-		let state = try!(State::parse(id, Cursor::new(buffer)));
+		let state = State::parse(id, Cursor::new(buffer))?;
 
 		if let State::Power(true) = state {
-			try!(self.reset());
+			self.reset()?;
 		}
 
 		Ok((state, buf_export))

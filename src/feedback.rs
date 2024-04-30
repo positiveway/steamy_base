@@ -14,7 +14,7 @@ impl<'a> Feedback<'a> {
 	#[doc(hidden)]
 	pub fn new(controller: &'a mut Controller<>) -> Feedback<'a> {
 		Feedback {
-			controller: controller,
+			controller,
 			side:       0,
 			amplitude:  128,
 			period:     0,
@@ -60,10 +60,10 @@ impl<'a> Feedback<'a> {
 		let count     = self.count;
 
 		self.controller.control_with(0x8f, 0x08, |mut buf| {
-			try!(buf.write_u8(side));
-			try!(buf.write_u16::<LittleEndian>(amplitude));
-			try!(buf.write_u16::<LittleEndian>(period));
-			try!(buf.write_u16::<LittleEndian>(count));
+			buf.write_u8(side)?;
+			buf.write_u16::<LittleEndian>(amplitude)?;
+			buf.write_u16::<LittleEndian>(period)?;
+			buf.write_u16::<LittleEndian>(count)?;
 
 			Ok(())
 		})

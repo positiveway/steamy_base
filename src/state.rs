@@ -90,51 +90,51 @@ impl State {
 	pub fn parse<R: Read + Seek>(id: u8, mut buffer: R) -> Res<State> {
 		match id {
 			0x01 => {
-				let sequence = try!(buffer.read_u32::<LittleEndian>());
+				let sequence = buffer.read_u32::<LittleEndian>()?;
 
-				let buttons = try!(buffer.read_u32::<BigEndian>());
+				let buttons = buffer.read_u32::<BigEndian>()?;
 				let ltrig   = buttons & 0xff;
 				let buttons = buttons >> 8;
-				let rtrig   = try!(buffer.read_u8());
+				let rtrig   = buffer.read_u8()?;
 
-				try!(buffer.seek(SeekFrom::Current(3)));
+				buffer.seek(SeekFrom::Current(3))?;
 
-				let lpad_x = try!(buffer.read_i16::<LittleEndian>());
-				let lpad_y = try!(buffer.read_i16::<LittleEndian>());
-				let rpad_x = try!(buffer.read_i16::<LittleEndian>());
-				let rpad_y = try!(buffer.read_i16::<LittleEndian>());
+				let lpad_x = buffer.read_i16::<LittleEndian>()?;
+				let lpad_y = buffer.read_i16::<LittleEndian>()?;
+				let rpad_x = buffer.read_i16::<LittleEndian>()?;
+				let rpad_y = buffer.read_i16::<LittleEndian>()?;
 
-				let ltrigp = try!(buffer.read_u16::<LittleEndian>());
-				let rtrigp = try!(buffer.read_u16::<LittleEndian>());
+				let ltrigp = buffer.read_u16::<LittleEndian>()?;
+				let rtrigp = buffer.read_u16::<LittleEndian>()?;
 
-				try!(buffer.seek(SeekFrom::Current(8)));
+				buffer.seek(SeekFrom::Current(8))?;
 
-				let apitch = try!(buffer.read_i16::<LittleEndian>());
-				let ayaw   = try!(buffer.read_i16::<LittleEndian>());
-				let aroll  = try!(buffer.read_i16::<LittleEndian>());
+				let apitch = buffer.read_i16::<LittleEndian>()?;
+				let ayaw   = buffer.read_i16::<LittleEndian>()?;
+				let aroll  = buffer.read_i16::<LittleEndian>()?;
 
-				let opitch = try!(buffer.read_i16::<LittleEndian>());
-				let oyaw   = try!(buffer.read_i16::<LittleEndian>());
-				let oroll  = try!(buffer.read_i16::<LittleEndian>());
+				let opitch = buffer.read_i16::<LittleEndian>()?;
+				let oyaw   = buffer.read_i16::<LittleEndian>()?;
+				let oroll  = buffer.read_i16::<LittleEndian>()?;
 
 				Ok(State::Input {
-					sequence: sequence,
+					sequence,
 
-					buttons: try!(Button::from_bits(buttons).ok_or(Error::InvalidParameter)),
+					buttons: Button::from_bits(buttons).ok_or(Error::InvalidParameter)?,
 
 					trigger: Trigger {
 						left: if ltrigp != 0 {
-							ltrigp as f32 / i16::max_value() as f32
+							ltrigp as f32 / i16::MAX as f32
 						}
 						else {
-							ltrig as f32 / u8::max_value() as f32
+							ltrig as f32 / u8::MAX as f32
 						},
 
 						right: if rtrigp != 0 {
-							rtrigp as f32 / i16::max_value() as f32
+							rtrigp as f32 / i16::MAX as f32
 						}
 						else {
-							rtrig as f32 / u8::max_value() as f32
+							rtrig as f32 / u8::MAX as f32
 						},
 					},
 
@@ -165,7 +165,7 @@ impl State {
 			}
 
 			0x03 => {
-				let mode = try!(buffer.read_u8());
+				let mode = buffer.read_u8()?;
 
 				Ok(State::Power(match mode {
 					0x01 => false,
@@ -177,10 +177,10 @@ impl State {
 			}
 
 			0x04 => {
-				let sequence = try!(buffer.read_u32::<LittleEndian>());
+				let sequence = buffer.read_u32::<LittleEndian>()?;
 
 				Ok(State::Idle {
-					sequence: sequence,
+					sequence,
 				})
 			}
 
