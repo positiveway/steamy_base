@@ -52,7 +52,7 @@ impl Default for Settings {
 
 /// The controller.
 pub struct Controller {
-    handle: rusb::DeviceHandle<rusb::GlobalContext>,
+    handle: rusb::DeviceHandle<rusb::Context>,
     packet: [u8; 64],
     settings: Settings,
 
@@ -72,8 +72,8 @@ pub struct Controller {
 
 impl Controller {
     pub fn new(
-		mut device: rusb::Device<rusb::GlobalContext>,
-		mut handle: rusb::DeviceHandle<rusb::GlobalContext>,
+		mut device: rusb::Device<rusb::Context>,
+		mut handle: rusb::DeviceHandle<rusb::Context>,
 		product: u16,
 		endpoint: u8,
 		index: u16,

@@ -2,6 +2,7 @@ use crate::{Controller};
 use crate::{VENDOR_ID, PRODUCT_ID, ENDPOINT, INDEX};
 use color_eyre::{Result};
 use color_eyre::eyre::bail;
+use rusb::UsbContext;
 
 /// Controller manager.
 pub struct Manager {
@@ -18,7 +19,7 @@ impl Manager {
 
     /// Open a controller.
     pub fn open(&mut self) -> Result<Controller> {
-        for mut device in rusb::devices()?.iter() {
+        for mut device in self.usb.devices()?.iter() {
             let descriptor = device.device_descriptor()?;
 
             if descriptor.vendor_id() != VENDOR_ID {
