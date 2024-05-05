@@ -6,10 +6,5 @@ edition = "2021"
 [dependencies]
 byteorder = "1.5"
 bitflags  = "2.5"
-
-[target.'cfg(target_os = "linux")'.dependencies.rusb]
-version = "0.9"
-
-[target.'cfg(not(target_os = "linux"))'.dependencies.hid]
-version  = "0.2"
-features = ["build"]
+rusb = "0.9"
+color-eyre = "0.6"

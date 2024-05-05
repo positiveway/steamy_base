@@ -1,72 +1,41 @@
-#[cfg(target_os = "linux")]
-use usb;
-
-#[cfg(not(target_os = "linux"))]
-use hid;
-
-use crate::{Result as Res, Controller};
+use crate::{Controller};
 use crate::{VENDOR_ID, PRODUCT_ID, ENDPOINT, INDEX};
+use color_eyre::{Result};
+use color_eyre::eyre::bail;
 
 /// Controller manager.
 pub struct Manager {
-	#[cfg(target_os = "linux")]
-	usb: usb::Context,
-
-	#[cfg(not(target_os = "linux"))]
-	hid: hid::Manager,
+    usb: rusb::Context,
 }
 
 impl Manager {
-	/// Create a new controller manager.
-	#[cfg(target_os = "linux")]
-	pub fn new() -> Res<Manager> {
-		Ok(Manager {
-			usb: usb::Context::new()?,
-		})
-	}
+    /// Create a new controller manager.
+    pub fn new() -> Result<Manager> {
+        Ok(Manager {
+            usb: rusb::Context::new()?,
+        })
+    }
 
-	#[cfg(not(target_os = "linux"))]
-	pub fn new() -> Res<Manager> {
-		Ok(Manager {
-			hid: hid::init()?,
-		})
-	}
+    /// Open a controller.
+    pub fn open(&mut self) -> Result<Controller> {
+        for mut device in rusb::devices()?.iter() {
+            let descriptor = device.device_descriptor()?;
 
-	/// Open a controller.
-	#[cfg(target_os = "linux")]
-	pub fn open(&mut self) -> Res<Controller> {
+            if descriptor.vendor_id() != VENDOR_ID {
+                continue;
+            }
 
-		for mut device in rusb::devices()?.iter() {
-			let descriptor = device.device_descriptor()?;
+            for (&product, (&endpoint, &index)) in PRODUCT_ID.iter().zip(ENDPOINT.iter().zip(INDEX.iter())) {
+                if descriptor.product_id() != product {
+                    continue;
+                }
 
-			if descriptor.vendor_id() != VENDOR_ID {
-				continue;
-			}
+                let handle = device.open()?;
 
-			for (&product, (&endpoint, &index)) in PRODUCT_ID.iter().zip(ENDPOINT.iter().zip(INDEX.iter())) {
-				if descriptor.product_id() != product {
-					continue;
-				}
-				
-				let handle = device.open()?;
+                return Ok(Controller::new(device, handle, product, endpoint, index)?);
+            }
+        }
 
-				return Controller::new(device, handle, product, endpoint, index);
-			}
-		}
-
-		return Err(usb::Error::NoDevice.into());
-	}
-
-	#[cfg(not(target_os = "linux"))]
-	pub fn open(&self) -> Res<Controller> {
-		for &product in &PRODUCT_ID {
-			for device in self.hid.find(Some(VENDOR_ID), Some(product)) {
-				if let Ok(handle) = device.open() {
-					return Controller::new(handle, product);
-				}
-			}
-		}
-
-		return Err(hid::Error::NotFound.into());
-	}
+        bail!(rusb::Error::NoDevice);
+    }
 }
