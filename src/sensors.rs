@@ -3,12 +3,12 @@ use color_eyre::{Result};
 
 /// Controller sensors management.
 pub struct Sensors<'a> {
-    controller: &'a mut Controller<>,
+    controller: &'a mut Controller,
 }
 
 impl<'a, 'b> Sensors<'a> {
     #[doc(hidden)]
-    pub fn new(controller: &'a mut Controller<>) -> Sensors<'a> {
+    pub fn new(controller: &'a mut Controller) -> Sensors<'a> {
         Sensors {
             controller,
         }

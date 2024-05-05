@@ -3,12 +3,12 @@ use color_eyre::{Result};
 
 /// Controller led management.
 pub struct Lizard<'a> {
-    controller: &'a mut Controller<>,
+    controller: &'a mut Controller,
 }
 
 impl<'a, 'b> Lizard<'a> {
     #[doc(hidden)]
-    pub fn new(controller: &'a mut Controller<>) -> Lizard<'a> {
+    pub fn new(controller: &'a mut Controller) -> Lizard<'a> {
         Lizard {
             controller,
         }

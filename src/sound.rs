@@ -20,7 +20,7 @@ pub enum Note {
 }
 
 pub struct Sound<'a> {
-    controller: &'a mut Controller<>,
+    controller: &'a mut Controller,
     channel: u8,
     note: Note,
     sharp: bool,
@@ -30,7 +30,7 @@ pub struct Sound<'a> {
 
 impl<'a, 'b> Sound<'a> {
     #[doc(hidden)]
-    pub fn new(controller: &'a mut Controller<>) -> Sound<'a> {
+    pub fn new(controller: &'a mut Controller) -> Sound<'a> {
         Sound {
             controller: controller,
             channel: 0,

@@ -3,12 +3,12 @@ use color_eyre::{Result};
 
 /// Calibration manager.
 pub struct Calibrate<'a> {
-    controller: &'a mut Controller<>,
+    controller: &'a mut Controller,
 }
 
 impl<'a, 'b> Calibrate<'a> {
     #[doc(hidden)]
-    pub fn new(controller: &'a mut Controller<>) -> Calibrate<'a> {
+    pub fn new(controller: &'a mut Controller) -> Calibrate<'a> {
         Calibrate {
             controller,
         }

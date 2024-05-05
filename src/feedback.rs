@@ -4,7 +4,7 @@ use color_eyre::{Result};
 
 /// Controller feedback builder.
 pub struct Feedback<'a> {
-    controller: &'a mut Controller<>,
+    controller: &'a mut Controller,
     side: u8,
     amplitude: u16,
     period: u16,
@@ -13,7 +13,7 @@ pub struct Feedback<'a> {
 
 impl<'a> Feedback<'a> {
     #[doc(hidden)]
-    pub fn new(controller: &'a mut Controller<>) -> Feedback<'a> {
+    pub fn new(controller: &'a mut Controller) -> Feedback<'a> {
         Feedback {
             controller,
             side: 0,

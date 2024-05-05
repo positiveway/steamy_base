@@ -70,14 +70,14 @@ pub struct Controller {
 // 	marker:  PhantomData<&'a ()>,
 // }
 
-impl<'a> Controller {
+impl Controller {
     pub fn new(
 		mut device: rusb::Device<rusb::GlobalContext>,
 		mut handle: rusb::DeviceHandle<rusb::GlobalContext>,
 		product: u16,
 		endpoint: u8,
 		index: u16,
-	) -> Result<Controller<>> {
+	) -> Result<Controller> {
         let mut address: Option<u8> = None;
 
         for i in 0..device.device_descriptor()?.num_configurations() {
@@ -291,32 +291,32 @@ impl<'a> Controller {
     // }
 
     /// Get the lizard manager.
-    pub fn lizard<'b>(&'b mut self) -> Lizard<'b> where 'a: 'b {
+    pub fn lizard(&mut self) -> Lizard  {
         Lizard::new(self)
     }
 
     /// Get the LED manager.
-    pub fn led<'b>(&'b mut self) -> Led<'b> where 'a: 'b {
+    pub fn led(&mut self) -> Led {
         Led::new(self)
     }
 
     /// Get the feedback builder.
-    pub fn feedback<'b>(&'b mut self) -> Feedback<'b> where 'a: 'b {
+    pub fn feedback(&mut self) -> Feedback {
         Feedback::new(self)
     }
 
     /// Get the sensor manager.
-    pub fn sensors<'b>(&'b mut self) -> Sensors<'b> where 'a: 'b {
+    pub fn sensors(&mut self) -> Sensors {
         Sensors::new(self)
     }
 
     /// Get the calibration manager.
-    pub fn calibrate<'b>(&'b mut self) -> Calibrate<'b> where 'a: 'b {
+    pub fn calibrate(&mut self) -> Calibrate {
         Calibrate::new(self)
     }
 
     /// Get the sound player.
-    pub fn sound<'b>(&'b mut self) -> Sound<'b> where 'a: 'b {
+    pub fn sound(&mut self) -> Sound {
         Sound::new(self)
     }
 
