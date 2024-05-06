@@ -89,6 +89,7 @@ pub struct Angles {
 
 impl State {
     /// Parse the state from a given packet.
+    #[inline]
     pub fn parse<R: Read + Seek>(id: u8, mut buffer: R) -> Result<State> {
         match id {
             0x01 => {

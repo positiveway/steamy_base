@@ -362,6 +362,7 @@ impl Controller {
     }
 
     #[doc(hidden)]
+    #[inline]
     pub fn receive(&mut self, timeout: Duration) -> Result<(u8, &[u8])> {
         if self.handle.read_interrupt(self.address, &mut self.packet, timeout)? != 64 {
             bail!(rusb::Error::InvalidParam);
@@ -380,6 +381,7 @@ impl Controller {
     // }
 
     /// Get the current state of the controller.
+    #[inline]
     pub fn state(&mut self, timeout: Duration) -> Result<(State, Vec<u8>)> {
         let (id, buffer) = self.receive(timeout)?;
         let buf_export = buffer.to_vec();
