@@ -49,6 +49,7 @@ impl Default for Settings {
         }
     }
 }
+
 #[cfg(target_os = "linux")]
 const PACKET_MAX_SIZE: usize = 64;
 #[cfg(target_os = "windows")]
@@ -92,7 +93,7 @@ pub fn find_address(
     mut device: rusb::Device<rusb::Context>,
     mut handle: rusb::DeviceHandle<rusb::Context>,
     endpoint: u8,
-) -> Result<(u8, rusb::DeviceHandle<rusb::Context>)>{
+) -> Result<(u8, rusb::DeviceHandle<rusb::Context>)> {
     let mut address: Option<u8> = None;
 
     for i in 0..device.device_descriptor()?.num_configurations() {
@@ -123,12 +124,12 @@ pub fn find_address(
 
 impl Controller {
     pub fn new(
-		mut device: rusb::Device<rusb::Context>,
-		mut handle: rusb::DeviceHandle<rusb::Context>,
-		product: u16,
-		endpoint: u8,
-		index: u16,
-	) -> Result<Controller> {
+        mut device: rusb::Device<rusb::Context>,
+        mut handle: rusb::DeviceHandle<rusb::Context>,
+        product: u16,
+        endpoint: u8,
+        index: u16,
+    ) -> Result<Controller> {
         let (address, handle) = find_address(device, handle, endpoint)?;
 
         let mut controller = Controller {
@@ -237,9 +238,9 @@ impl Controller {
     {
         self.packet.clone_from_slice(&[0; PACKET_MAX_SIZE][..]);
         self.packet[PACKET_START_IND] = id;
-        self.packet[PACKET_START_IND+1] = size;
+        self.packet[PACKET_START_IND + 1] = size;
 
-        func(Cursor::new(&mut self.packet[PACKET_START_IND+2..]))?;
+        func(Cursor::new(&mut self.packet[PACKET_START_IND + 2..]))?;
         self.handle.write_control(0x21, 0x09, 0x0300, self.index, &self.packet[..], Duration::from_secs(0))?;
 
         Ok(())
@@ -284,9 +285,9 @@ impl Controller {
     {
         self.packet.clone_from_slice(&[0; PACKET_MAX_SIZE][..]);
         self.packet[PACKET_START_IND] = id;
-        self.packet[PACKET_START_IND+1] = size;
+        self.packet[PACKET_START_IND + 1] = size;
 
-        func(Cursor::new(&mut self.packet[PACKET_START_IND+2..]))?;
+        func(Cursor::new(&mut self.packet[PACKET_START_IND + 2..]))?;
 
         let mut limit = LIMIT;
         loop {
@@ -296,14 +297,14 @@ impl Controller {
             request!(limit, self.handle.read_control(0xa1, 0x01, 0x0300,
 				self.index, &mut self.packet[..], Duration::from_secs(0)));
 
-            if self.packet[PACKET_START_IND] == id && self.packet[PACKET_START_IND+1] != 0 {
+            if self.packet[PACKET_START_IND] == id && self.packet[PACKET_START_IND + 1] != 0 {
                 break;
             }
 
             request!(limit, Err(rusb::Error::NotSupported));
         }
 
-        Ok(&self.packet[PACKET_START_IND+2..(self.packet[PACKET_START_IND+1] + 2) as usize])
+        Ok(&self.packet[PACKET_START_IND + 2..(self.packet[PACKET_START_IND + 1] + 2) as usize])
     }
 
     // #[doc(hidden)]
@@ -319,10 +320,10 @@ impl Controller {
     //     let mut limit = LIMIT;
     //     loop {
     //         request!(limit, self.handle.write_control(0x21, 0x09, 0x0300, self.index,
-	// 			&self.packet[..], Duration::from_secs(0)));
+    // 			&self.packet[..], Duration::from_secs(0)));
     //
     //         request!(limit, self.handle.read_control(0xa1, 0x01, 0x0300,
-	// 			self.index, &mut self.packet[..], Duration::from_secs(0)));
+    // 			self.index, &mut self.packet[..], Duration::from_secs(0)));
     //
     //         if self.packet[0] == id && self.packet[1] != 0 {
     //             break;
@@ -360,7 +361,7 @@ impl Controller {
     // }
 
     /// Get the lizard manager.
-    pub fn lizard(&mut self) -> Lizard  {
+    pub fn lizard(&mut self) -> Lizard {
         Lizard::new(self)
     }
 
@@ -437,7 +438,7 @@ impl Controller {
             bail!(rusb::Error::InvalidParam);
         }
 
-        Ok((self.packet[PACKET_START_IND+2], &self.packet[PACKET_START_IND+4..(self.packet[PACKET_START_IND+3] as usize + PACKET_START_IND + 4)]))
+        Ok((self.packet[PACKET_START_IND + 2], &self.packet[PACKET_START_IND + 4..(self.packet[PACKET_START_IND + 3] as usize + PACKET_START_IND + 4)]))
     }
 
     // pub fn receive(&mut self, timeout: Duration) -> Result<(u8, &[u8])> {
