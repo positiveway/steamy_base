@@ -69,6 +69,16 @@ pub struct Controller {
     index: u16,
 }
 
+// pub struct Controller {
+//     handle: rusb::DeviceHandle<rusb::Context>,
+//     packet: [u8; 64],
+//     settings: Settings,
+//
+//     product: u16,
+//     address: u8,
+//     index: u16,
+// }
+
 // pub struct Controller<'a> {
 // 	handle:  hid::Handle,
 // 	packet:  [u8; 65],
