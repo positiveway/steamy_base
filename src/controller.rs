@@ -49,11 +49,19 @@ impl Default for Settings {
         }
     }
 }
+#[cfg(target_os = "linux")]
+const PACKET_MAX_SIZE: usize = 64;
+#[cfg(target_os = "windows")]
+const PACKET_MAX_SIZE: usize = 65;
+#[cfg(target_os = "linux")]
+const PACKET_START_IND: usize = 0;
+#[cfg(target_os = "windows")]
+const PACKET_START_IND: usize = 1;
 
 /// The controller.
 pub struct Controller {
     handle: rusb::DeviceHandle<rusb::Context>,
-    packet: [u8; 64],
+    packet: [u8; PACKET_MAX_SIZE],
     settings: Settings,
 
     product: u16,
@@ -70,6 +78,39 @@ pub struct Controller {
 // 	marker:  PhantomData<&'a ()>,
 // }
 
+pub fn find_address(
+    mut device: rusb::Device<rusb::Context>,
+    mut handle: rusb::DeviceHandle<rusb::Context>,
+    endpoint: u8,
+) -> Result<(u8, rusb::DeviceHandle<rusb::Context>)>{
+    let mut address: Option<u8> = None;
+
+    for i in 0..device.device_descriptor()?.num_configurations() {
+        for interface in device.config_descriptor(i)?.interfaces() {
+            if handle.kernel_driver_active(interface.number())? {
+                handle.detach_kernel_driver(interface.number())?;
+            }
+
+            for descriptor in interface.descriptors() {
+                if descriptor.class_code() == 3 &&
+                    descriptor.sub_class_code() == 0 &&
+                    descriptor.protocol_code() == 0
+                {
+                    handle.claim_interface(descriptor.interface_number())?;
+                }
+
+                for end in descriptor.endpoint_descriptors() {
+                    if end.number() == endpoint {
+                        address = Some(end.address());
+                    }
+                }
+            }
+        }
+    }
+    let address = address.ok_or(rusb::Error::InvalidParam)?;
+    Ok((address, handle))
+}
+
 impl Controller {
     pub fn new(
 		mut device: rusb::Device<rusb::Context>,
@@ -78,38 +119,15 @@ impl Controller {
 		endpoint: u8,
 		index: u16,
 	) -> Result<Controller> {
-        let mut address: Option<u8> = None;
-
-        for i in 0..device.device_descriptor()?.num_configurations() {
-            for interface in device.config_descriptor(i)?.interfaces() {
-                if handle.kernel_driver_active(interface.number())? {
-                    handle.detach_kernel_driver(interface.number())?;
-                }
-
-                for descriptor in interface.descriptors() {
-                    if descriptor.class_code() == 3 &&
-                        descriptor.sub_class_code() == 0 &&
-                        descriptor.protocol_code() == 0
-                    {
-                        handle.claim_interface(descriptor.interface_number())?;
-                    }
-
-                    for end in descriptor.endpoint_descriptors() {
-                        if end.number() == endpoint {
-                            address = Some(end.address());
-                        }
-                    }
-                }
-            }
-        }
+        let (address, handle) = find_address(device, handle, endpoint)?;
 
         let mut controller = Controller {
             handle,
-            packet: [0u8; 64],
+            packet: [0u8; PACKET_MAX_SIZE],
             settings: Default::default(),
 
             product,
-            address: address.ok_or(rusb::Error::InvalidParam)?,
+            address,
             index,
         };
 
@@ -123,21 +141,20 @@ impl Controller {
         Ok(controller)
     }
 
-    // #[cfg(not(target_os = "linux"))]
     // pub fn new<'b>(handle: hid::Handle, product: u16) -> Res<Controller<'b>> {
-    // 	let mut controller = Controller {
-    // 		handle:   handle,
-    // 		packet:   [0u8; 65],
-    // 		settings: Default::default(),
+    //     let mut controller = Controller {
+    //         handle:   handle,
+    //         packet:   [0u8; 65],
+    //         settings: Default::default(),
     //
-    // 		product: product,
+    //         product: product,
     //
-    // 		marker: PhantomData,
-    // 	};
+    //         marker: PhantomData,
+    //     };
     //
-    // 	controller.reset()?;
+    //     controller.reset()?;
     //
-    // 	Ok(controller)
+    //     Ok(controller)
     // }
 
     /// Check if the controller is remote.
@@ -208,15 +225,29 @@ impl Controller {
     pub fn control_with<T, F>(&mut self, id: u8, size: u8, func: F) -> Result<()>
         where F: FnOnce(Cursor<&mut [u8]>) -> io::Result<T>
     {
-        self.packet.clone_from_slice(&[0; 64][..]);
-        self.packet[0] = id;
-        self.packet[1] = size;
+        self.packet.clone_from_slice(&[0; PACKET_MAX_SIZE][..]);
+        self.packet[PACKET_START_IND] = id;
+        self.packet[PACKET_START_IND+1] = size;
 
-        func(Cursor::new(&mut self.packet[2..]))?;
+        func(Cursor::new(&mut self.packet[PACKET_START_IND+2..]))?;
         self.handle.write_control(0x21, 0x09, 0x0300, self.index, &self.packet[..], Duration::from_secs(0))?;
 
         Ok(())
     }
+
+    // #[doc(hidden)]
+    // pub fn control_with<T, F>(&mut self, id: u8, size: u8, func: F) -> Result<()>
+    //     where F: FnOnce(Cursor<&mut [u8]>) -> io::Result<T>
+    // {
+    //     self.packet.clone_from_slice(&[0; 64][..]);
+    //     self.packet[0] = id;
+    //     self.packet[1] = size;
+    //
+    //     func(Cursor::new(&mut self.packet[2..]))?;
+    //     self.handle.write_control(0x21, 0x09, 0x0300, self.index, &self.packet[..], Duration::from_secs(0))?;
+    //
+    //     Ok(())
+    // }
 
     // #[cfg(not(target_os = "linux"))]
     // pub fn control_with<T, F>(&mut self, func: F) -> Res<()>
@@ -241,11 +272,11 @@ impl Controller {
     pub fn request_with<T, F>(&mut self, id: u8, size: u8, func: F) -> Result<&[u8]>
         where F: FnOnce(Cursor<&mut [u8]>) -> io::Result<T>
     {
-        self.packet.clone_from_slice(&[0; 64][..]);
-        self.packet[0] = id;
-        self.packet[1] = size;
+        self.packet.clone_from_slice(&[0; PACKET_MAX_SIZE][..]);
+        self.packet[PACKET_START_IND] = id;
+        self.packet[PACKET_START_IND+1] = size;
 
-        func(Cursor::new(&mut self.packet[2..]))?;
+        func(Cursor::new(&mut self.packet[PACKET_START_IND+2..]))?;
 
         let mut limit = LIMIT;
         loop {
@@ -255,15 +286,43 @@ impl Controller {
             request!(limit, self.handle.read_control(0xa1, 0x01, 0x0300,
 				self.index, &mut self.packet[..], Duration::from_secs(0)));
 
-            if self.packet[0] == id && self.packet[1] != 0 {
+            if self.packet[PACKET_START_IND] == id && self.packet[PACKET_START_IND+1] != 0 {
                 break;
             }
 
             request!(limit, Err(rusb::Error::NotSupported));
         }
 
-        Ok(&self.packet[2..(self.packet[1] + 2) as usize])
+        Ok(&self.packet[PACKET_START_IND+2..(self.packet[PACKET_START_IND+1] + 2) as usize])
     }
+
+    // #[doc(hidden)]
+    // pub fn request_with<T, F>(&mut self, id: u8, size: u8, func: F) -> Result<&[u8]>
+    //     where F: FnOnce(Cursor<&mut [u8]>) -> io::Result<T>
+    // {
+    //     self.packet.clone_from_slice(&[0; 64][..]);
+    //     self.packet[0] = id;
+    //     self.packet[1] = size;
+    //
+    //     func(Cursor::new(&mut self.packet[2..]))?;
+    //
+    //     let mut limit = LIMIT;
+    //     loop {
+    //         request!(limit, self.handle.write_control(0x21, 0x09, 0x0300, self.index,
+	// 			&self.packet[..], Duration::from_secs(0)));
+    //
+    //         request!(limit, self.handle.read_control(0xa1, 0x01, 0x0300,
+	// 			self.index, &mut self.packet[..], Duration::from_secs(0)));
+    //
+    //         if self.packet[0] == id && self.packet[1] != 0 {
+    //             break;
+    //         }
+    //
+    //         request!(limit, Err(rusb::Error::NotSupported));
+    //     }
+    //
+    //     Ok(&self.packet[2..(self.packet[1] + 2) as usize])
+    // }
 
     // #[cfg(not(target_os = "linux"))]
     // pub fn request_with<T, F>(&mut self, id: u8, size: u8, func: F) -> Res<&[u8]>
@@ -364,12 +423,20 @@ impl Controller {
     #[doc(hidden)]
     #[inline]
     pub fn receive(&mut self, timeout: Duration) -> Result<(u8, &[u8])> {
-        if self.handle.read_interrupt(self.address, &mut self.packet, timeout)? != 64 {
+        if self.handle.read_interrupt(self.address, &mut self.packet, timeout)? != PACKET_MAX_SIZE {
             bail!(rusb::Error::InvalidParam);
         }
 
-        Ok((self.packet[2], &self.packet[4..(self.packet[3] + 4) as usize]))
+        Ok((self.packet[PACKET_START_IND+2], &self.packet[PACKET_START_IND+4..(self.packet[PACKET_START_IND+3] as usize + PACKET_START_IND + 4)]))
     }
+
+    // pub fn receive(&mut self, timeout: Duration) -> Result<(u8, &[u8])> {
+    //     if self.handle.read_interrupt(self.address, &mut self.packet, timeout)? != 64 {
+    //         bail!(rusb::Error::InvalidParam);
+    //     }
+    //
+    //     Ok((self.packet[2], &self.packet[4..(self.packet[3] + 4) as usize]))
+    // }
 
     // #[cfg(not(target_os = "linux"))]
     // pub fn receive(&mut self, timeout: Duration) -> Res<(u8, &[u8])> {
