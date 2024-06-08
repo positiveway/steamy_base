@@ -52,6 +52,7 @@ impl Default for Settings {
 
 #[cfg(target_os = "linux")]
 const PACKET_MAX_SIZE: usize = 64;
+const DEBUG_PACKET_SIZE: usize = 64;
 #[cfg(target_os = "windows")]
 const PACKET_MAX_SIZE: usize = 65;
 #[cfg(target_os = "linux")]
@@ -63,6 +64,7 @@ const PACKET_START_IND: usize = 1;
 pub struct Controller {
     handle: rusb::DeviceHandle<rusb::Context>,
     packet: [u8; PACKET_MAX_SIZE],
+    debug_packet: [u8; DEBUG_PACKET_SIZE],
     settings: Settings,
 
     product: u16,
@@ -135,6 +137,7 @@ impl Controller {
         let mut controller = Controller {
             handle,
             packet: [0u8; PACKET_MAX_SIZE],
+            debug_packet: [0u8; DEBUG_PACKET_SIZE],
             settings: Default::default(),
 
             product,
@@ -431,14 +434,30 @@ impl Controller {
         })
     }
 
-    #[doc(hidden)]
+    #[cfg(feature = "debug_mode")]
     #[inline]
-    pub fn receive(&mut self, timeout: Duration) -> Result<(u8, &[u8])> {
+    pub fn receive(&mut self, timeout: Duration) -> Result<(u8, &[u8], &[u8])> {
+        self.handle.read_interrupt(self.address, &mut self.debug_packet, timeout)?;
+
+        Ok((
+            self.debug_packet[PACKET_START_IND + 2],
+            &self.debug_packet[PACKET_START_IND + 4..(self.debug_packet[PACKET_START_IND + 3] as usize + PACKET_START_IND + 4)],
+            &self.debug_packet
+        ))
+    }
+
+    #[cfg(not(feature = "debug_mode"))]
+    #[inline]
+    pub fn receive(&mut self, timeout: Duration) -> Result<(u8, &[u8], &[u8])> {
         if self.handle.read_interrupt(self.address, &mut self.packet, timeout)? != PACKET_MAX_SIZE {
             bail!(rusb::Error::InvalidParam);
         }
 
-        Ok((self.packet[PACKET_START_IND + 2], &self.packet[PACKET_START_IND + 4..(self.packet[PACKET_START_IND + 3] as usize + PACKET_START_IND + 4)]))
+        Ok((
+            self.packet[PACKET_START_IND + 2],
+            &self.packet[PACKET_START_IND + 4..(self.packet[PACKET_START_IND + 3] as usize + PACKET_START_IND + 4)],
+            &self.packet
+        ))
     }
 
     // pub fn receive(&mut self, timeout: Duration) -> Result<(u8, &[u8])> {
@@ -462,8 +481,8 @@ impl Controller {
     #[cfg(feature = "debug_mode")]
     #[inline]
     pub fn state(&mut self, timeout: Duration) -> Result<(State, Vec<u8>)> {
-        let (id, buffer) = self.receive(timeout)?;
-        let buf_export = buffer.to_vec();
+        let (id, buffer, full_buffer) = self.receive(timeout)?;
+        let buf_export = full_buffer.to_vec();
 
         let state = State::parse(id, Cursor::new(buffer))?;
 
@@ -477,8 +496,9 @@ impl Controller {
     #[cfg(not(feature = "debug_mode"))]
     #[inline]
     pub fn state(&mut self, timeout: Duration) -> Result<(State, bool)> {
-        let (id, buffer) = self.receive(timeout)?;
+        let (id, buffer, _) = self.receive(timeout)?;
 
+        // doesn't work when touching right pad at the same time
         let is_left_pad = buffer[6] == 8;
 
         let state = State::parse(id, Cursor::new(buffer))?;
