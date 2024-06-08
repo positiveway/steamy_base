@@ -3,6 +3,9 @@ name    = "steamy_base"
 version = "0.2.0"
 edition = "2021"
 
+[features]
+debug_mode = []
+
 [dependencies]
 byteorder = "1.5"
 bitflags  = "2.5"

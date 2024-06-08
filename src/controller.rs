@@ -459,6 +459,7 @@ impl Controller {
     // }
 
     /// Get the current state of the controller.
+    #[cfg(feature = "debug_mode")]
     #[inline]
     pub fn state(&mut self, timeout: Duration) -> Result<(State, Vec<u8>)> {
         let (id, buffer) = self.receive(timeout)?;
@@ -471,5 +472,21 @@ impl Controller {
         }
 
         Ok((state, buf_export))
+    }
+
+    #[cfg(not(feature = "debug_mode"))]
+    #[inline]
+    pub fn state(&mut self, timeout: Duration) -> Result<(State, bool)> {
+        let (id, buffer) = self.receive(timeout)?;
+
+        let is_left_pad = buffer[6] == 8;
+
+        let state = State::parse(id, Cursor::new(buffer))?;
+
+        if let State::Power(true) = state {
+            self.reset()?;
+        }
+
+        Ok((state, is_left_pad))
     }
 }
